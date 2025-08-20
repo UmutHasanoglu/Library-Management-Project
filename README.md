@@ -116,7 +116,8 @@ To run the backend API server:
 uvicorn api:app \--reload
 ```
 
-The API will be running at http://127.0.0.1:8000. You can access the interactive API documentation (powered by Swagger UI) at http://127.0.0.1:8000/docs.
+The API will be running at http://127.0.0.1:8000. 
+You can access the interactive API documentation (powered by Swagger UI) at http://127.0.0.1:8000/docs.
 
 ### **3\. Web User Interface (UI)**
 
@@ -124,6 +125,18 @@ To use the full-featured web application:
 
 1. Ensure the FastAPI Web Service is running (see step above).  
 2. Open the index.html file directly in your web browser.
+
+### **Windows Automation Scripts**
+
+To make the project easier to use on Windows, three batch (.bat) scripts are included:
+
+*install.bat*: This script will automatically create a virtual environment using uv, activate it, and install all the necessary dependencies from requirements.txt. Simply double-click this file to set up the project.
+
+*start\_cli.bat*: This script runs the command-line interface (CLI) version. It automatically activates the virtual environment and runs python main.py.
+
+*start\_webui.bat*: This script launches the FastAPI backend server and simultaneously opens the index.html web interface in your default web browser.
+
+---
 
 ## **📖 API Documentation**
 
@@ -140,4 +153,10 @@ The API provides the following endpoints to interact with the library:
 
 ## **✅ Testing**
 
-The project includes a comprehensive test suite using pytest to ensure all components work as expected. The tests cover the core Library class logic, the main application functions, and all
+The project includes a comprehensive test suite using `pytest` to ensure all components work as expected. The tests cover the core `Library` class logic, the `main` application functions, and all API endpoints.
+
+**To run the tests:**
+```bash
+pytest
+```
+The tests are designed to be fully isolated and will not interfere with your `library.json` data file. They use temporary files and directories to ensure a clean state for every test run.
