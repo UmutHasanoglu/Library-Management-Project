@@ -49,32 +49,50 @@ Follow these steps to get the project up and running on your local machine.
 
 **Clone the repository:**
 
+```bash
 git clone https://github.com/UmutHasanoglu/Library-Management-Project.git
 
 cd Library-Management-Project
+```
 
 **Create and activate a virtual environment:**
 
 \# Using venv (standard library)  
+```
 python \-m venv .venv  
-source .venv/bin/activate  \# On Windows: .venv\\Scripts\\activate
+source .venv/bin/activate 
+```
+\# On Windows: 
+```
+.venv\\Scripts\\activate
+```
 
 \# Using uv (faster and modern)  
+```
 uv venv
-Activate with: .venv\Scripts\activate
+```
+Activate with: 
+```
+.venv\Scripts\activate
+```
 
 **Install the required dependencies:**
-
+```
 pip install \-r requirements.txt
+```
 or
+```
 uv pip install \-r requirements.txt
+```
 
 ### **3\. Populating Your Library (Optional)**
 
 The application uses library.json for storage. You can start with an empty library or use the included converter.py script to convert a LibraryThing JSON export into the correct format.
 
 \# This will convert your export and create a pre-populated library.json  
+```
 python converter.py
+```
 
 ## **⚙️ Usage Guide**
 
@@ -84,7 +102,9 @@ You can run the application in three different ways:
 
 For basic, terminal-based library management:
 
+```
 python main.py
+```
 
 You will be presented with a menu of options to manage your library.
 
@@ -92,7 +112,9 @@ You will be presented with a menu of options to manage your library.
 
 To run the backend API server:
 
+```
 uvicorn api:app \--reload
+```
 
 The API will be running at http://127.0.0.1:8000. You can access the interactive API documentation (powered by Swagger UI) at http://127.0.0.1:8000/docs.
 
