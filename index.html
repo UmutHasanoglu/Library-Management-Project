@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Library Manager</h1>
+            <p class="text-lg text-gray-600 mt-2">A simple interface to manage your book collection.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Forms -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Add Book Manually Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">Add a Book Manually</h2>
+                    <form id="addBookForm" class="space-y-4">
+                        <input type="text" id="title" placeholder="Title" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="author" placeholder="Author" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="isbn" placeholder="ISBN" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" id="year" placeholder="Year" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition duration-300">Add Book</button>
+                    </form>
+                </div>
+                <!-- Fetch from OpenLibrary Form -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">Fetch from OpenLibrary</h2>
+                    <form id="fetchBookForm" class="space-y-4">
+                        <input type="text" id="fetchIsbn" placeholder="Enter ISBN to Fetch" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition duration-300">Fetch Info</button>
+                    </form>
+                    <form id="addFetchedBookForm" class="space-y-4 mt-4 hidden">
+                        <h3 class="text-xl font-semibold">Review and Add Book</h3>
+                        <input type="text" id="fetchedTitle" placeholder="Title" required class="w-full p-3 border border-gray-300 rounded-md bg-gray-50">
+                        <input type="text" id="fetchedAuthor" placeholder="Author" required class="w-full p-3 border border-gray-300 rounded-md bg-gray-50">
+                        <input type="text" id="fetchedIsbn" placeholder="ISBN" required readonly class="w-full p-3 border border-gray-300 rounded-md bg-gray-200 cursor-not-allowed">
+                        <input type="number" id="fetchedYear" placeholder="Year" required class="w-full p-3 border border-gray-300 rounded-md bg-gray-50">
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition duration-300">Add to Library</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Book List -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                    <h2 class="text-2xl font-semibold">Library Collection <span id="bookCount" class="text-lg font-normal text-gray-500"></span></h2>
+                    <button id="exportCsvButton" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-700 transition duration-300">Export as CSV</button>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                    <input type="text" id="searchInput" placeholder="Search by title, author, ISBN..." class="w-full sm:w-1/2 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    <select id="sortOptions" class="w-full sm:w-auto p-3 border border-gray-300 rounded-md">
+                        <option value="date_added_desc">Date Added (Newest First)</option>
+                        <option value="date_added_asc">Date Added (Oldest First)</option>
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="title_desc">Title (Z-A)</option>
+                        <option value="author_asc">Author (A-Z)</option>
+                        <option value="author_desc">Author (Z-A)</option>
+                        <option value="year_desc">Year (Newest First)</option>
+                        <option value="year_asc">Year (Oldest First)</option>
+                    </select>
+                </div>
+                <div id="bookList" class="space-y-4">
+                    <!-- Books will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div id="editModal" class="modal-backdrop hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-11/12 max-w-lg">
+            <h2 class="text-2xl font-semibold mb-6">Edit Book</h2>
+            <form id="editBookForm" class="space-y-4">
+                <input type="hidden" id="editIsbnOriginal">
+                <input type="text" id="editTitle" placeholder="Title" required class="w-full p-3 border border-gray-300 rounded-md">
+                <input type="text" id="editAuthor" placeholder="Author" required class="w-full p-3 border border-gray-300 rounded-md">
+                <input type="text" id="editIsbn" placeholder="ISBN" required readonly class="w-full p-3 border border-gray-300 rounded-md bg-gray-200 cursor-not-allowed">
+                <input type="number" id="editYear" placeholder="Year" required class="w-full p-3 border border-gray-300 rounded-md">
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="cancelEdit" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let allBooks = []; 
+
+        const renderBooks = () => {
+            const bookList = document.getElementById('bookList');
+            const bookCountEl = document.getElementById('bookCount');
+            bookList.innerHTML = '';
+
+            let booksToDisplay = [...allBooks];
+
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                booksToDisplay = booksToDisplay.filter(book =>
+                    book.title.toLowerCase().includes(searchTerm) ||
+                    book.author.toLowerCase().includes(searchTerm) ||
+                    book.isbn.toLowerCase().includes(searchTerm) ||
+                    book.year.toString().includes(searchTerm)
+                );
+            }
+
+            const sortBy = document.getElementById('sortOptions').value;
+            switch (sortBy) {
+                case 'date_added_desc':
+                    booksToDisplay.sort((a, b) => (b.date_added || '').localeCompare(a.date_added || ''));
+                    break;
+                case 'date_added_asc':
+                    booksToDisplay.sort((a, b) => (a.date_added || '').localeCompare(b.date_added || ''));
+                    break;
+                case 'title_asc':
+                    booksToDisplay.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'title_desc':
+                    booksToDisplay.sort((a, b) => b.title.localeCompare(a.title));
+                    break;
+                case 'author_asc':
+                    booksToDisplay.sort((a, b) => a.author.localeCompare(b.author));
+                    break;
+                case 'author_desc':
+                    booksToDisplay.sort((a, b) => b.author.localeCompare(a.author));
+                    break;
+                case 'year_desc':
+                    booksToDisplay.sort((a, b) => b.year - a.year);
+                    break;
+                case 'year_asc':
+                    booksToDisplay.sort((a, b) => a.year - b.year);
+                    break;
+            }
+            
+            // Update book count display
+            bookCountEl.textContent = `(${booksToDisplay.length} of ${allBooks.length} books shown)`;
+
+
+            if (booksToDisplay.length === 0) {
+                bookList.innerHTML = `<p class="text-gray-500">${searchTerm ? 'No books match your search.' : 'The library is empty.'}</p>`;
+                return;
+            }
+
+            booksToDisplay.forEach(book => {
+                const bookElement = document.createElement('div');
+                bookElement.className = 'p-4 border border-gray-200 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4';
+                bookElement.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-lg">${book.title} <span class="text-sm font-normal text-gray-500">(${book.year})</span></h3>
+                        <p class="text-gray-600">by ${book.author}</p>
+                        <p class="text-sm text-gray-400">ISBN: ${book.isbn}</p>
+                    </div>
+                    <div class="flex gap-2 self-end sm:self-center">
+                        <button onclick="openEditModal('${book.isbn}')" class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600 transition duration-300">Edit</button>
+                        <button onclick="removeBook('${book.isbn}')" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition duration-300">Remove</button>
+                    </div>
+                `;
+                bookList.appendChild(bookElement);
+            });
+        };
+
+        const fetchBooks = async () => {
+            try {
+                const response = await fetch(`${API_URL}/books`);
+                allBooks = await response.json();
+                renderBooks();
+            } catch (error) {
+                console.error('Error fetching books:', error);
+                document.getElementById('bookList').innerHTML = '<p class="text-red-500">Failed to load books. Is the API running?</p>';
+            }
+        };
+
+        const removeBook = async (isbn) => {
+            if (!confirm(`Are you sure you want to remove the book with ISBN: ${isbn}?`)) return;
+            try {
+                const response = await fetch(`${API_URL}/books/${isbn}`, { method: 'DELETE' });
+                if (response.status === 204) {
+                    fetchBooks();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error removing book:', error);
+                alert('An error occurred while trying to remove the book.');
+            }
+        };
+
+        const openEditModal = (isbn) => {
+            const book = allBooks.find(b => b.isbn === isbn);
+            if (book) {
+                document.getElementById('editTitle').value = book.title;
+                document.getElementById('editAuthor').value = book.author;
+                document.getElementById('editIsbn').value = book.isbn;
+                document.getElementById('editYear').value = book.year;
+                document.getElementById('editModal').classList.remove('hidden');
+            }
+        };
+
+        const closeEditModal = () => {
+            document.getElementById('editModal').classList.add('hidden');
+        };
+
+        document.getElementById('editBookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const isbn = document.getElementById('editIsbn').value;
+            const updatedBook = {
+                title: document.getElementById('editTitle').value,
+                author: document.getElementById('editAuthor').value,
+                isbn: isbn,
+                year: parseInt(document.getElementById('editYear').value),
+                available: true
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/books/${isbn}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedBook)
+                });
+                if (response.ok) {
+                    fetchBooks();
+                    closeEditModal();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error updating book:', error);
+                alert('An error occurred while updating the book.');
+            }
+        });
+
+        document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+
+        document.getElementById('addBookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const book = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                isbn: document.getElementById('isbn').value,
+                year: parseInt(document.getElementById('year').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/books`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+                });
+                if (response.status === 201) {
+                    fetchBooks();
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error adding book:', error);
+                alert('An error occurred while adding the book.');
+            }
+        });
+
+        document.getElementById('fetchBookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const isbn = document.getElementById('fetchIsbn').value;
+            const addFetchedForm = document.getElementById('addFetchedBookForm');
+            
+            try {
+                const response = await fetch(`${API_URL}/openlibrary/${isbn}`);
+                if (response.ok) {
+                    const bookData = await response.json();
+                    document.getElementById('fetchedTitle').value = bookData.title;
+                    document.getElementById('fetchedAuthor').value = bookData.author;
+                    document.getElementById('fetchedIsbn').value = bookData.isbn;
+                    document.getElementById('fetchedYear').value = bookData.year;
+                    addFetchedForm.classList.remove('hidden');
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                    addFetchedForm.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching book info:', error);
+                alert('An error occurred while fetching book info.');
+            }
+        });
+
+        document.getElementById('addFetchedBookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const book = {
+                title: document.getElementById('fetchedTitle').value,
+                author: document.getElementById('fetchedAuthor').value,
+                isbn: document.getElementById('fetchedIsbn').value,
+                year: parseInt(document.getElementById('fetchedYear').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/books`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+                });
+                if (response.status === 201) {
+                    fetchBooks();
+                    e.target.reset();
+                    e.target.classList.add('hidden');
+                    document.getElementById('fetchBookForm').reset();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error adding fetched book:', error);
+                alert('An error occurred while adding the fetched book.');
+            }
+        });
+        
+        const exportToCsv = () => {
+            const headers = ["Title", "Author", "ISBN", "Year", "Available", "DateAdded"];
+            const csvRows = [headers.join(",")];
+
+            allBooks.forEach(book => {
+                const values = [
+                    `"${(book.title || '').replace(/"/g, '""')}"`,
+                    `"${(book.author || '').replace(/"/g, '""')}"`,
+                    book.isbn,
+                    book.year,
+                    book.available,
+                    book.date_added || ''
+                ];
+                csvRows.push(values.join(","));
+            });
+
+            const csvString = csvRows.join("\n");
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "library.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+        document.getElementById('exportCsvButton').addEventListener('click', exportToCsv);
+        document.getElementById('searchInput').addEventListener('input', renderBooks);
+        document.getElementById('sortOptions').addEventListener('change', renderBooks);
+
+        fetchBooks();
+    </script>
+</body>
+</html>
